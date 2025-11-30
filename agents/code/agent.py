@@ -1,13 +1,13 @@
 from pathlib import Path
 from dotenv import load_dotenv
 from google.adk.agents import Agent
+from agents.code.code import CodeGenerationOutput
 
 load_dotenv()
 
-with open("./prompts/testing.txt", "r", encoding="utf-8") as f:
+with open("./prompts/code-agent.txt", "r", encoding="utf-8") as f:
     code_instructions = f.read()
-
-
+   
 root_agent = Agent(
     name="code_agent",
     model="gemini-2.0-flash",
@@ -17,4 +17,6 @@ root_agent = Agent(
     instruction=(
         code_instructions
     ),
+    output_key="generated_code",
+    output_schema=CodeGenerationOutput
 )
