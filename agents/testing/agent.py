@@ -10,7 +10,7 @@ with open("./prompts/testing.txt", "r", encoding="utf-8") as f:
     testing_instructions = f.read()
 
 root_agent = Agent(
-    name="assistant_agent",
+    name="test_agent",
     model="gemini-2.0-flash",
     description=(
         "Agent to write unit tests"

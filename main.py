@@ -1,45 +1,81 @@
-# --- 1. CENTRALIZED PERSISTENCE INITIALIZATION ---
+import asyncio
 from google.adk.runners import Runner
 from google.adk.sessions import DatabaseSessionService
-from google.adk.agents import SequentialAgent, Agent 
-from google.adk.models import Gemini
-from google.genai.types import Content, Part
-from google.adk.sessions import Session
-import asyncio
-from pathlib import Path
+from google.adk.agents import SequentialAgent
 from dotenv import load_dotenv
+from google.genai import types
+from uuid import uuid4
+
+load_dotenv()
 
 from agents.story_grooming.agent import root_agent as groomer_agent
 from agents.code.agent import root_agent as code_agent
 from agents.testing.agent import root_agent as test_agent
+from agents.writer.agent import root_agent as writer_agent
 
-# 1. Database URL: Defines the database file location and type (SQLite + aiosqlite driver)
 DB_URL = "sqlite+aiosqlite:///./session_management.db"
 print(f"💾 Central Session Service initialized using {DB_URL}")
 
-# 2. Session Service Creation: This creates the single instance of the service.
-#    This object handles all the SQL operations (saving, retrieving, updating sessions).
 session_service = DatabaseSessionService(db_url=DB_URL)
 
 
-# --- 2. AGENT INSTANTIATION AND SEQUENTIAL SETUP ---
-# ... (Agents instantiated here: groomer_agent, code_agent, test_agent) ...
 
-
-# 3. Create the Sequential Agent Pipeline
 sdlc_pipeline = SequentialAgent(
     name="sdlc_master_pipeline",
     sub_agents=[
         groomer_agent,
         code_agent,
         test_agent,
+        writer_agent
     ],
 )
 
-# 4. Initialize the Runner (The Orchestrator)
-#    The Runner uses the SequentialAgent and the SHARED persistent session service.
 runner = Runner(
-    agent=sdlc_pipeline, # The runner executes the entire sequential pipeline
-    session_service=session_service, # 🟢 THIS IS THE KEY LINK!
-    app_name="sdlc_pipeline_app" 
+    agent=sdlc_pipeline, 
+    session_service=session_service, 
+    app_name="agents" 
 )
+
+
+APP_NAME = "agents"   
+USER_ID = "user_001"
+SESSION_ID = f"sdlc_{uuid4().hex[:12]}"
+
+
+
+async def interactive_run():
+    await session_service.create_session(
+        app_name=APP_NAME,
+        user_id=USER_ID,
+        session_id=SESSION_ID
+    )
+
+    print("\n✅ SDLC Pipeline ready.")
+    print("Type your input below (file path, instruction, etc.)")
+    print("Type 'exit' to stop.\n")
+
+    while True:
+        user_input = input("YOU> ").strip()
+
+        if user_input.lower() in {"exit", "quit"}:
+            print("👋 Session ended.")
+            break
+
+        content = types.Content(
+            role="user",
+            parts=[types.Part(text=user_input)]
+        )
+
+        print("\n🤖 PIPELINE RUNNING...\n")
+
+        for event in runner.run(
+            user_id=USER_ID,
+            session_id=SESSION_ID,
+            new_message=content
+        ):
+            if event.is_final_response():
+                print("✅ FINAL OUTPUT:\n", event.content)
+
+
+if __name__ == "__main__":
+    asyncio.run(interactive_run())

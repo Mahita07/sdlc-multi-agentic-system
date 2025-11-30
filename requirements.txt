@@ -1,3 +1,6 @@
 google-adk
 google-generativeai
 python-dotenv
+sqlalchemy
+aiosqlite
+greenlet

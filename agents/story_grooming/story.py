@@ -9,5 +9,9 @@ class GroomedStory(BaseModel):
     )
     tech_notes: List[str] = Field(
         ..., 
-        description="List of technical considerations, dependencies, constraints, risks, or open questions"
+        description="List of technical considerations, dependencies, constraints, risks, or open questions",
+    )
+    file_path: str = Field(
+        ...,
+        description="Absolute path of where the generated code and tests should be stored"
     )
